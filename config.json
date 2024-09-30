@@ -1,0 +1,25 @@
+{
+    "upstream": [
+        {
+            "domain": "http://localhost:8081",
+            "weight": 1
+        },
+        {
+            "domain": "http://localhost:8082",
+            "weight": 1
+        }
+    ],
+
+    "lb_method": "round-robin",
+    "listen": 80,
+    
+    "retries": 3,
+    "retry_interval": 200,
+    "health_check_path": "/health",
+    "health_check_retries": 3,
+    "health_check_retry_interval": 500,
+    "health_check_interval": 30000,
+    "send_alert_webhook": "",
+    "alert_on_failure_streak": 3,
+    "enableSelfHealing": false
+}
