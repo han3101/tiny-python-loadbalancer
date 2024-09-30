@@ -7,14 +7,24 @@ class LoadBalancingAlgo(Enum):
     ROUND_ROBIN = 2
     IP_HASH = 3
 
+algo_map = {
+    "random": LoadBalancingAlgo.RANDOM,
+    "round-robin": LoadBalancingAlgo.ROUND_ROBIN,
+    "ip-hash": LoadBalancingAlgo.IP_HASH
+}
+
 class LBAlgo:
-    def __init__(self, servers: list[BackendServer], algo_type: LoadBalancingAlgo):
+    def __init__(self, servers: list[BackendServer], algo_type: str):
+        
+        algo_type_str = algo_type.lower().strip()
+        if algo_type_str not in algo_map:
+            raise ValueError(f"[LBAlgoError] Unsupported algorithm type: {algo_type_str}, please enter either 'random', 'round-robin' or 'ip-hash'")
+        
         self.servers = servers
-        self.algo_type = algo_type
+        self.algo_type = algo_map[algo_type_str]
         self.round_robin_index = 0
 
     def get_next_server(self, ip: str = None) -> BackendServer:
-        """Dispatch to the appropriate algorithm based on the enum."""
         if self.algo_type == LoadBalancingAlgo.RANDOM:
             return self.random_algo()
         elif self.algo_type == LoadBalancingAlgo.ROUND_ROBIN:

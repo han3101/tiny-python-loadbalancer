@@ -20,7 +20,7 @@ class BackendServer:
         return (f"Server: {self.get_url()}, "
                 f"Weight: {self.weight}, "
                 f"Active Connections: {self.active_connections}, "
-                f"Health Status: {self.health_status.value}, "
+                # f"Health Status: {self.health_status.value}, "
                 f"Failures: {self.failures}")
 
     def __repr__(self):

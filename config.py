@@ -81,7 +81,8 @@ def initialize_config(config: dict) -> dict:
 
     return config
 
-    # Main function to load, initialize, validate, and return the config
+
+# debug
 def get_config():
     # Load the configuration from file
     config = load_config()
