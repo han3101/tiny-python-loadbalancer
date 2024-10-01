@@ -1,21 +1,25 @@
 from fastapi import FastAPI, HTTPException, Request
 import asyncio
 import uvicorn, httpx
-from typing import List
+from typing import List, Set
 from pydantic import BaseModel
 from server import BackendServer
 from lb_algo import LBAlgo
+from health_check import HealthCheck
 
 class LoadBalancer:
-    def __init__(self, servers: List[BackendServer], config: dict, port: int = 80):
+    def __init__(self, servers: List[BackendServer], healthy_servers: Set[BackendServer], config: dict, port: int = 80):
         self.backend_servers = servers
         self.port = port
         self.healthy_servers = []
+        self.unhealthy_servers = []
+        self.total_requests_served = 0
 
         print(self.backend_servers)
 
         self.lb_algo = LBAlgo(servers, config['lb_method'])
         self.app = self.create_app()
+        self.healthchecker = HealthCheck(servers, healthy_servers, config)
 
 
     def create_app(self) -> FastAPI:
@@ -64,6 +68,9 @@ class LoadBalancer:
                         params=query_params,
                         content=body
                     )
+                    if response.status_code == 200:
+                        server.requests_served += 1
+                        self.total_requests_served += 1
 
                 return {
                     "status_code": response.status_code,
@@ -84,5 +91,16 @@ class LoadBalancer:
         for server in self.backend_servers:
             print(f"Server: {server.url}, Requests Served: {server.requests_served}, Status: {server.get_status()}")
 
-    def run(self):
-        uvicorn.run(self.app, host="0.0.0.0", port=self.port)
+    async def start_healthchecks(self):
+        await self.healthchecker.run_health_checks()
+
+    # def run(self):
+    #     uvicorn.run(self.app, host="0.0.0.0", port=self.port)
+
+    async def run(self):
+
+        health_check_task = asyncio.create_task(self.start_healthchecks())
+        uvicorn_config = uvicorn.Config(app=self.app, host="0.0.0.0", port=self.port)
+        uvicorn_server = uvicorn.Server(uvicorn_config)
+        print("Starting Uvicorn server...")
+        await uvicorn_server.serve() 

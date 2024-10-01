@@ -42,9 +42,10 @@ config_schema = {
     'retry_interval': {'type': 'integer', 'min': 0, 'max': 10000, 'required': True},
 
     'health_check_path': {'type': 'string', 'required': True},
-    'health_check_retries': {'type': 'integer', 'min': 0, 'required': True},
-    'health_check_retry_interval': {'type': 'integer', 'min': 0, 'max': 10000, 'required': True},
-    'health_check_interval': {'type': 'integer', 'min': 10 * 1000, 'max': 300 * 1000, 'required': True},
+    'health_check_timeout': {'type': 'integer', 'min': 0, 'max': 10, 'required': True},
+    'health_check_fails': {'type': 'integer', 'min': 0, 'required': True},
+    'health_check_pass': {'type': 'integer', 'min': 0, 'max': 10, 'required': True},
+    'health_check_interval': {'type': 'integer', 'min': 0, 'max': 300 * 1000, 'required': True},
 
     'send_alert_webhook': {'type': 'string', 'required': False, 'nullable': True, 'default': False},
     'alert_on_failure_streak': {'type': 'integer', 'min': 1, 'max': 100, 'required': False, 'default': 3},
@@ -72,9 +73,10 @@ def initialize_config(config: dict) -> dict:
     config['retry_interval'] = config.get('retry_interval', 200)
     
     config['health_check_path'] = config.get('health_check_path', '/health')
-    config['health_check_retries'] = config.get('health_check_retries', config.get('retries', 3))
-    config['health_check_retry_interval'] = config.get('health_check_retry_interval', config.get('retry_interval', 500))
-    config['health_check_interval'] = config.get('health_check_interval', 30 * 1000)
+    config['health_check_timeout'] = config.get('health_check_timeout', 2)
+    config['health_check_fails'] = config.get('health_check_fails', 3)
+    config['health_check_pass'] = config.get('health_check_pass', 2)
+    config['health_check_interval'] = config.get('health_check_interval', 10)
     
     config['alert_on_failure_streak'] = config.get('alert_on_failure_streak', 3)
     config['enableSelfHealing'] = config.get('enableSelfHealing', False)

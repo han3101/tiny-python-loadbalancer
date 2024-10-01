@@ -14,7 +14,6 @@ class BackendServer:
         self.failures = 0
         self.health = ServerStatus.HEALTHY
         self.requests_served = 0
-        self.total_requests_served = 0
 
     def __str__(self):
         return (f"Server: {self.get_url()}, "

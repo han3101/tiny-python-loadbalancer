@@ -14,7 +14,7 @@ async def read_root(response: Response):
 @app.get("/health")
 async def read_health(response: Response):
     response.status_code = 200
-    return {"message": "Healthy"}
+    return {"message": "All good"}
 
 @app.get("/task1")
 async def read_task1(response: Response):
