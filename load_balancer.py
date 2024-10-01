@@ -11,13 +11,13 @@ class LoadBalancer:
     def __init__(self, servers: List[BackendServer], healthy_servers: Set[BackendServer], config: dict, port: int = 80):
         self.backend_servers = servers
         self.port = port
-        self.healthy_servers = []
+        self.healthy_servers = healthy_servers
         self.unhealthy_servers = []
         self.total_requests_served = 0
 
         print(self.backend_servers)
 
-        self.lb_algo = LBAlgo(servers, config['lb_method'])
+        self.lb_algo = LBAlgo(servers, healthy_servers, config['lb_method'])
         self.app = self.create_app()
         self.healthchecker = HealthCheck(servers, healthy_servers, config)
 
@@ -45,8 +45,11 @@ class LoadBalancer:
 
         @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy(full_path: str, request: Request):
-            # Build the complete URL by combining backend URL and the requested path
-            server = self.lb_algo.get_next_server()
+            client_ip = request.client.host
+            server = self.lb_algo.get_next_server(ip=client_ip)
+            while server not in self.healthy_servers:
+                server = self.lb_algo.get_next_server(ip=client_ip)
+
             url = f"{server.get_url()}/{full_path}"
             print(f"Proxying request to {url}")
 
@@ -98,9 +101,9 @@ class LoadBalancer:
     #     uvicorn.run(self.app, host="0.0.0.0", port=self.port)
 
     async def run(self):
-
+        self.healthchecker.initial_health_screen()
         health_check_task = asyncio.create_task(self.start_healthchecks())
         uvicorn_config = uvicorn.Config(app=self.app, host="0.0.0.0", port=self.port)
         uvicorn_server = uvicorn.Server(uvicorn_config)
         print("Starting Uvicorn server...")
-        await uvicorn_server.serve() 
+        await uvicorn_server.serve()

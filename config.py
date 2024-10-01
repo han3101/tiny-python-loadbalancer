@@ -35,7 +35,7 @@ config_schema = {
             }
         }
     },
-    'lb_method': {'type': 'string', 'allowed': ['round-robin', 'ip-hash', 'weighted-round-robin'], 'required': True},
+    'lb_method': {'type': 'string', 'allowed': ['round-robin', 'ip-hash', 'weighted-round-robin', 'random'], 'required': True},
     'listen': {'type': 'integer', 'required': True},
 
     'retries': {'type': 'integer', 'min': 0, 'required': True},

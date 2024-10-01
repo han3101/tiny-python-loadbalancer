@@ -23,7 +23,9 @@ class HealthCheck:
                     print(f"Server {server.get_url()} is healthy")
                     return True
                 return False
+                print(f"Server {server.get_url()} is unhealthy")
         except (httpx.RequestError, httpx.TimeoutException):
+            print(f"Server {server.get_url()} is unavailable")
             return False
 
     async def perform_health_check(self, server):
@@ -51,5 +53,20 @@ class HealthCheck:
             # Wait for the next round of health checks
             await asyncio.sleep(self.interval)
 
+            # print("Healthy Servers: ", self.get_healthy_servers())
+
     def get_healthy_servers(self):
         return [server for server, status in self.server_status.items() if status["healthy"]]
+
+    def initial_health_screen(self):
+        for server in self.servers:
+            try:
+                response = httpx.get(f"{server.get_url()}/health", timeout=0.5)
+                
+                if response.status_code == 200:
+                    self.healthy_servers.add(server)
+
+            except httpx.TimeoutException:
+                print(f"[TIMEOUT] {server} did not respond in time.")
+            except httpx.RequestError as exc:
+                print(f"[ERROR] Error occurred while requesting {server}: {exc}")

@@ -1,6 +1,7 @@
-import random
+import random, bisect
 from server import BackendServer
 from enum import Enum
+from typing import List, Set
 
 class LoadBalancingAlgo(Enum):
     RANDOM = 1
@@ -14,13 +15,14 @@ algo_map = {
 }
 
 class LBAlgo:
-    def __init__(self, servers: list[BackendServer], algo_type: str):
+    def __init__(self, servers: List[BackendServer], healthy_servers: Set[BackendServer], algo_type: str):
         
         algo_type_str = algo_type.lower().strip()
         if algo_type_str not in algo_map:
             raise ValueError(f"[LBAlgoError] Unsupported algorithm type: {algo_type_str}, please enter either 'random', 'round-robin' or 'ip-hash'")
         
         self.servers = servers
+        self.healthy_servers = healthy_servers
         self.algo_type = algo_map[algo_type_str]
         self.round_robin_index = 0
 
@@ -52,11 +54,17 @@ class LBAlgo:
         self.round_robin_index = (self.round_robin_index + 1) % len(self.servers)  # Move to next server
         return server
 
+    # Not optimized for large number of servers
+    # Use only for small number of servers
     def ip_hash_algo(self, ip: str) -> BackendServer:
-        if not self.servers:
+        if not self.healthy_servers:
             raise ValueError("[IPHashAlgoError] No servers available")
 
-        index = hash(ip) % len(self.servers)
-        server = self.servers[index]
+        healthy_servers_list = sorted(self.healthy_servers, key=lambda s: s.get_url())
+
+        ip_hash = hash(ip)
+        server_index = bisect.bisect_right([hash(s.get_url()) for s in healthy_servers_list], ip_hash) % len(healthy_servers_list)
+
+        server = healthy_servers_list[server_index]
 
         return server
