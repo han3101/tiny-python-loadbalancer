@@ -18,8 +18,11 @@ python3 main.py
 **If you are running it on docker**
 ```bash
 docker build -t python-lb .
-docker run -p 80:80 python-lb
+docker run -p 80:80 -p 3030 python-lb
 ```
+
+**Debugging and Diagnostics**
+There is a separate diagnostic and debugging server on port 3030 to get statistics on the loadbalancer and the backend servers
 
 **Load Balancing Algorithims**
 3 supported algorithms currently

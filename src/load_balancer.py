@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 import asyncio
 import uvicorn, httpx
 from typing import List, Set
@@ -20,6 +20,7 @@ class LoadBalancer:
 
         self.lb_algo = LBAlgo(servers, healthy_servers, config['lb_method'])
         self.app = self.create_app()
+        self.debug_app = self.create_debug_app()
         self.healthchecker = HealthCheck(servers, healthy_servers, config)
 
 
@@ -67,7 +68,7 @@ class LoadBalancer:
                             content=body
                         )
                         if response.status_code == 200:
-                            server.requests_served += 1
+                            server.increment_requests_served()
                             self.total_requests_served += 1
 
                             return {
@@ -129,10 +130,51 @@ class LoadBalancer:
     # def run(self):
     #     uvicorn.run(self.app, host="0.0.0.0", port=self.port)
 
+
+    def create_debug_app(self) -> FastAPI:
+        app = FastAPI()
+
+        @app.get("/")
+        def read_root(response: Response):
+            response.status_code = 200
+            return {"message": "Welcome to the debug server"}
+
+        @app.get("/stats")
+        def lb_stats(response: Response):
+            response.status_code = 200
+            return {
+                "total_requests_served": self.total_requests_served,
+                "lb_algo": self.lb_algo.get_algo(),
+                "live_count": len(self.healthy_servers),
+                "healthy_servers": [server.get_url() for server in self.healthy_servers],
+                "backend_servers": [server.get_url() for server in self.backend_servers]
+            }
+
+        @app.get("/backend_stats")
+        def backend_stats(response: Response):
+            response.status_code = 200
+            return {"backend_stats": [server.get_stats() for server in self.backend_servers]}
+
+        @app.get("/health")
+        def health(response: Response):
+            response.status_code = 200
+            return {"status": "ok"}
+
+        return app
+
     async def run(self):
         self.healthchecker.initial_health_screen()
         health_check_task = asyncio.create_task(self.start_healthchecks())
         uvicorn_config = uvicorn.Config(app=self.app, host="0.0.0.0", port=self.port)
         uvicorn_server = uvicorn.Server(uvicorn_config)
+
+        uvicorn_debug_config = uvicorn.Config(app=self.debug_app, host="0.0.0.0", port=3030)
+        uvicorn_debug_server = uvicorn.Server(uvicorn_debug_config)
+
         print("Starting Uvicorn server...")
-        await uvicorn_server.serve()
+
+        await asyncio.gather(
+            uvicorn_server.serve(),
+            uvicorn_debug_server.serve(),
+            health_check_task 
+        )
