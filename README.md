@@ -2,6 +2,7 @@
 
 Tiny python loadbalancer is a multi-process, event driven load balancer modeled after NginX that supports random, ip-hashing and round robin distribution, health checks, alerts, retries and failover 
 
+**If you are running it directly on your local machine, update config.json to localhost**
 To start, create a virtual environment in Mac and Linux
 ```bash
 python3 -m venv venv
@@ -14,6 +15,11 @@ pip install -r requirements.txt
 cd src
 python3 main.py
 ```
+**If you are running it on docker**
+```bash
+docker build -t python-lb .
+docker run -p 80:80 python-lb
+```
 
 **Load Balancing Algorithims**
 3 supported algorithms currently
@@ -25,4 +31,3 @@ python3 main.py
 
 # TODO:
 1. Implement graceful reloading for configuration updates
-2. Dockerise loadbalancer
