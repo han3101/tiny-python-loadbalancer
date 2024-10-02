@@ -17,13 +17,17 @@
     "lb_method": "ip-hash",
     "listen": 80,
     
-    "retries": 3,
-    "retry_interval": 200,
+    "retries": 2,
+    "connect_timeout": 5,
+    "read_timeout": 5,
+    "send_timeout": 5,
+    "next_timeout": 5,
+
     "health_check_path": "/health",
     "health_check_timeout": 2,
     "health_check_fails": 3,
     "health_check_pass": 2,
-    "health_check_interval": 5,
+    "health_check_interval": 10,
     "send_alert_webhook": "",
     "alert_on_failure_streak": 3,
     "enableSelfHealing": false

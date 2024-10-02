@@ -68,3 +68,18 @@ class LBAlgo:
         server = healthy_servers_list[server_index]
 
         return server
+
+    def update_algo(self, algo_type: str) -> None:
+        algo_type_str = algo_type.lower().strip()
+        if algo_type_str not in algo_map:
+            raise ValueError(f"[LBAlgoError] Unsupported algorithm type: {algo_type_str}, please enter either 'random', 'round-robin' or 'ip-hash'")
+        
+        self.algo_type = algo_map[algo_type_str]
+
+
+    def get_algo(self) -> str:
+        for algo_str, algo_enum in algo_map.items():
+            if algo_enum == self.algo_type:
+                return algo_str
+
+        raise ValueError("[LBAlgoError] No matching algorithm string found for the current algo_type.")

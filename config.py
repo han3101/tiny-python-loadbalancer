@@ -39,7 +39,10 @@ config_schema = {
     'listen': {'type': 'integer', 'required': True},
 
     'retries': {'type': 'integer', 'min': 0, 'required': True},
-    'retry_interval': {'type': 'integer', 'min': 0, 'max': 10000, 'required': True},
+    'connect_timeout': {'type': 'integer', 'min': 0, 'max': 10000, 'required': False},
+    'read_timeout': {'type': 'integer', 'min': 0, 'max': 10000, 'required': False},
+    'send_timeout': {'type': 'integer', 'min': 0, 'max': 10000, 'required': False},
+    'next_timeout': {'type': 'integer', 'min': 0, 'max': 10000, 'required': False},
 
     'health_check_path': {'type': 'string', 'required': True},
     'health_check_timeout': {'type': 'integer', 'min': 0, 'max': 10, 'required': True},
@@ -70,7 +73,10 @@ def initialize_config(config: dict) -> dict:
     config['listen'] = config.get('listen', 80)
     
     config['retries'] = config.get('retries', 3)
-    config['retry_interval'] = config.get('retry_interval', 200)
+    config['connect_timeout'] = config.get('retry_interval', 5)
+    config['read_timeout'] = config.get('retry_interval', 5)
+    config['send_timeout'] = config.get('retry_interval', 5)
+    config['next_timeout'] = config.get('retry_interval', 5)
     
     config['health_check_path'] = config.get('health_check_path', '/health')
     config['health_check_timeout'] = config.get('health_check_timeout', 2)

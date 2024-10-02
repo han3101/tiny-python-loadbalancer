@@ -14,6 +14,14 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
+**Load Balancing Algorithims**
+3 supported algorithms currently
+1. random --> :white_check_mark: Optimized for large number of servers
+2. round-robin --> :white_check_mark: Optimized for large number of servers
+3. ip-hash --> :exclamation: Not optimized for large number of servers, use only for less than 50 servers!
+    * Uses consistent hashing algorithm
+
+
 # TODO:
 1. Implement graceful reloading for configuration updates
 2. Dockerise loadbalancer

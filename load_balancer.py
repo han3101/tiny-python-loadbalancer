@@ -11,6 +11,7 @@ class LoadBalancer:
     def __init__(self, servers: List[BackendServer], healthy_servers: Set[BackendServer], config: dict, port: int = 80):
         self.backend_servers = servers
         self.port = port
+        self.config = config
         self.healthy_servers = healthy_servers
         self.unhealthy_servers = []
         self.total_requests_served = 0
@@ -25,33 +26,12 @@ class LoadBalancer:
     def create_app(self) -> FastAPI:
         app = FastAPI()
 
-        # @app.get("/")
-        # async def root(request: Request):
-        #     server = self.lb_algo.get_next_server()
-        #     # return {"message": "Hello World", "server": server.get_url()}
-
-        #     try:
-        #         async with httpx.AsyncClient() as client:
-        #             response = await client.get(server.get_url())
-        #             if response.status_code == 200:
-        #                 server.requests_served += 1
-        #                 server.total_requests_served += 1
-        #                 return response.json()
-        #             else:
-        #                 raise HTTPException(status_code=response.status_code)
-        #             return response.json()
-        #     except httpx.HTTPError as e:
-        #         raise HTTPException(status_code=500, detail=f"Error connecting to {server.get_url()}: {str(e)}")
-
         @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy(full_path: str, request: Request):
             client_ip = request.client.host
-            server = self.lb_algo.get_next_server(ip=client_ip)
-            while server not in self.healthy_servers:
-                server = self.lb_algo.get_next_server(ip=client_ip)
-
-            url = f"{server.get_url()}/{full_path}"
-            print(f"Proxying request to {url}")
+            server = self.get_next_server(ip=client_ip)
+            
+            retry_limit = self.config["retries"]
 
             # Prepare the request parameters
             method = request.method
@@ -61,30 +41,79 @@ class LoadBalancer:
             # Read the body for POST/PUT requests
             body = await request.body()
 
-            # Use httpx to forward the request to the backend server
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.request(
-                        method=method, 
-                        url=url,
-                        headers=headers,
-                        params=query_params,
-                        content=body
-                    )
-                    if response.status_code == 200:
-                        server.requests_served += 1
-                        self.total_requests_served += 1
+            timeout = httpx.Timeout(
+            connect=self.config['connect_timeout'],
+            read=self.config['read_timeout'],
+            write=self.config['send_timeout'],
+            pool=self.config['next_timeout']
+            )
 
-                return {
-                    "status_code": response.status_code,
-                    "headers": dict(response.headers),
-                    "content": response.text
-                }
-            except httpx.HTTPError as e:
-                raise HTTPException(status_code=500, detail=f"Error connecting to {server.get_url()}: {str(e)}")
+            # Use httpx to forward the request to the backend server
+            retry = 0
+            while retry <= retry_limit:
+                url = f"{server.get_url()}/{full_path}"
+                print(f"Proxying request to {url}")
+                
+                async with httpx.AsyncClient(timeout=timeout) as client:
+
+                    # for _ in range(retry_limit):
+                    
+                    try: 
+                        response = await client.request(
+                            method=method, 
+                            url=url,
+                            headers=headers,
+                            params=query_params,
+                            content=body
+                        )
+                        if response.status_code == 200:
+                            server.requests_served += 1
+                            self.total_requests_served += 1
+
+                            return {
+                                "status_code": response.status_code,
+                                "headers": dict(response.headers),
+                                "content": response.text
+                            }
+
+                        elif response.status_code in [500, 502, 503, 504]:
+                            retry += 1
+                            print(f"Server {server.get_url()} returned {response.status_code}. Switching to another server.")
+                            if self.lb_algo.get_algo() == "ip-hash":
+                                self.lb_algo.update_algo("round-robin")
+                            server = self.get_next_server(ip=client_ip)
+                            self.lb_algo.update_algo(self.config['lb_method'])
+
+                            print(f"Switched to new server: {server.get_url()}")
+                            continue
+                        else:
+                            break
+
+                    except httpx.RequestError as e:
+                        retry += 1
+                        print(f"Network error: {e}. Switching to another server.")
+                        if self.lb_algo.get_algo() == "ip-hash":
+                            self.lb_algo.update_algo("round-robin")
+                        server = self.get_next_server(ip=client_ip)
+                        self.lb_algo.update_algo(self.config['lb_method'])
+                        
+                        print(f"Switched to new server: {server.get_url()}")
+
+                
+
+            raise HTTPException(status_code=500, detail="All retries failed on all servers.")
 
         return app
 
+    def get_next_server(self, ip: str = None) -> BackendServer:
+        if not self.healthy_servers:
+            raise HTTPException(status_code=503, detail="No healthy servers available.")
+
+        server = self.lb_algo.get_next_server(ip=ip)
+        while server not in self.healthy_servers and self.healthy_servers:
+            server = self.lb_algo.get_next_server(ip=ip)
+        
+        return server
 
     def get_backend_server(self) -> BackendServer:
         return self.lb_algo.get_next_server()

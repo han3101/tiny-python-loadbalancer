@@ -18,9 +18,13 @@ async def read_health(response: Response):
 
 @app.get("/task1")
 async def read_task1(response: Response):
-    time.sleep(2)
+    time.sleep(5)
     response.status_code = 200
     return {"message": "Task 1 completed"}
+
+@app.get("/forbidden")
+async def forbidden():
+    raise HTTPException(status_code=500, detail="Internal Server Error: Access to this resource is forbidden.")
 
 # Function to start the FastAPI app
 def start_fastapi_server(port):
