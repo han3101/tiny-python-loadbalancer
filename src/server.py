@@ -29,7 +29,12 @@ class BackendServer:
         return f"http://{self.host}:{self.port}"
 
     def get_status(self) -> ServerStatus:
-        return self.health
+        if self.health == ServerStatus.HEALTHY:
+            return "Healthy"
+        elif self.health == ServerStatus.UNHEALTHY:
+            return "Unhealthy"
+        elif self.health == ServerStatus.DEAD:
+            return "Dead"
 
     def set_status(self, status: ServerStatus):
         self.health = status
