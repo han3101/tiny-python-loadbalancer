@@ -11,6 +11,7 @@ source venv/bin/activate
 Install dependencies, update config.json and you are good to run the program
 ```bash
 pip install -r requirements.txt
+cd src
 python3 main.py
 ```
 

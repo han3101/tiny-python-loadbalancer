@@ -3,7 +3,7 @@ from cerberus import Validator
 
 
 def load_config() -> dict:
-    with open('config.json') as f:
+    with open('../config.json') as f:
         config = json.load(f)
 
     return config
