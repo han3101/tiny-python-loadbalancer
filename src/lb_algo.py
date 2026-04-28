@@ -1,4 +1,6 @@
-import random, bisect
+import bisect
+import hashlib
+import random
 from server import BackendServer
 from enum import Enum
 from typing import List, Set
@@ -60,14 +62,23 @@ class LBAlgo:
         if not self.healthy_servers:
             raise ValueError("[IPHashAlgoError] No servers available")
 
-        healthy_servers_list = sorted(self.healthy_servers, key=lambda s: s.get_url())
+        hash_ring = sorted(
+            (self._stable_hash(server.get_url()), server)
+            for server in self.healthy_servers
+        )
+        ring_positions = [position for position, _ in hash_ring]
 
-        ip_hash = hash(ip)
-        server_index = bisect.bisect_right([hash(s.get_url()) for s in healthy_servers_list], ip_hash) % len(healthy_servers_list)
+        ip_hash = self._stable_hash(ip)
+        server_index = bisect.bisect_right(ring_positions, ip_hash) % len(hash_ring)
 
-        server = healthy_servers_list[server_index]
+        _, server = hash_ring[server_index]
 
         return server
+
+    @staticmethod
+    def _stable_hash(value: str) -> int:
+        digest = hashlib.blake2b(value.encode("utf-8"), digest_size=8).digest()
+        return int.from_bytes(digest, byteorder="big", signed=False)
 
     def update_algo(self, algo_type: str) -> None:
         algo_type_str = algo_type.lower().strip()
