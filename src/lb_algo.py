@@ -58,6 +58,7 @@ class LBAlgo:
 
     # Not optimized for large number of servers
     # Use only for small number of servers
+    # TODO move to using virtual nodes for more even distribution
     def ip_hash_algo(self, ip: str) -> BackendServer:
         if not self.healthy_servers:
             raise ValueError("[IPHashAlgoError] No servers available")
