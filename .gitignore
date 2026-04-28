@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 src/__pycache__/
+tests/__pycache__/
 
 # C extensions
 *.so
@@ -125,7 +126,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
 .venv
+.venv/
 env/
 venv/
 ENV/
@@ -162,3 +165,11 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Editor / OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Lint caches
+.ruff_cache/

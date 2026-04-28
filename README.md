@@ -15,6 +15,18 @@ pip install -r requirements.txt
 cd src
 python3 main.py
 ```
+
+**Unit Tests**
+Run tests from the repository root after installing dependencies.
+```bash
+pytest -v
+```
+
+If you prefer not to activate the virtual environment, run pytest through the venv interpreter directly.
+```bash
+.venv/bin/python -m pytest -v
+```
+
 **If you are running it on docker**
 ```bash
 docker build -t python-lb .
