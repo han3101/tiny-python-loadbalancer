@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 import argparse
 import time
 
@@ -9,7 +9,18 @@ app = FastAPI()
 @app.get("/")
 async def read_root(response: Response):
     response.status_code = 200
+    response.headers["X-Backend-Port"] = str(port_number)
     return {"message": f"Hello World from server {port_number}"}
+
+@app.post("/")
+async def post_root(request: Request, response: Response):
+    response.status_code = 200
+    response.headers["X-Backend-Port"] = str(port_number)
+    body = await request.body()
+    return {
+        "message": f"POST handled by server {port_number}",
+        "body": body.decode("utf-8") if body else ""
+    }
 
 @app.get("/health")
 async def read_health(response: Response):

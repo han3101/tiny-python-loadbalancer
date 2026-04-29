@@ -43,6 +43,30 @@ There is a separate diagnostic and debugging server on port 3030 to get statisti
 3. ip-hash --> :exclamation: Not optimized for large number of servers, use only for less than 50 servers!
     * Uses consistent hashing algorithm
 
+**Local testing**
+Start the sample backend servers from the repository root in separate terminals.
+```bash
+python3 backend/backend.py --port 8081
+python3 backend/backend.py --port 8082
+python3 backend/backend.py --port 8083
+```
+
+There is a small client runner at `run_script/request_runner.py` that sends requests through the load balancer and prints which backend port handled each request.
+```bash
+python3 run_script/request_runner.py --base-url http://localhost
+python3 run_script/request_runner.py --base-url http://localhost --method POST
+```
+
+To test sticky routing by client IP locally, set `"lb_method": "ip-hash"` in `config.json`, start the backend servers, start the load balancer, and then send requests with simulated client IPs:
+```bash
+python3 run_script/request_runner.py \
+  --base-url http://localhost \
+  --client-ips 10.0.0.1,10.0.0.2,10.0.0.1,10.0.0.3 \
+  --requests 9
+```
+
+Requests with the same simulated client IP should consistently map to the same backend port.
+
 
 # TODO:
 1. Implement graceful reloading for configuration updates

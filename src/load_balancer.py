@@ -29,7 +29,7 @@ class LoadBalancer:
 
         @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
         async def proxy(full_path: str, request: Request):
-            client_ip = request.client.host
+            client_ip = self.get_client_ip(request)
             server = self.get_next_server(ip=client_ip)
             
             retry_limit = self.config["retries"]
@@ -105,6 +105,15 @@ class LoadBalancer:
             raise HTTPException(status_code=500, detail="All retries failed on all servers.")
 
         return app
+
+    @staticmethod
+    def get_client_ip(request: Request) -> str:
+        # Allow local testing of ip-hash via a forwarded IP header.
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
+
+        return request.client.host
 
     def get_next_server(self, ip: str = None) -> BackendServer:
         if not self.healthy_servers:
